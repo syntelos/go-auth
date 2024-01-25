@@ -18,4 +18,4 @@ require (
 	google.golang.org/protobuf v1.31.0 // indirect
 )
 
-replace github.com/syntelos/go-auth => github.com/syntelos/go-auth @v1.3.1-0.20240125181909-fee92a26345d
+retract v1.3.1
