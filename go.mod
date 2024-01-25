@@ -19,3 +19,4 @@ require (
 )
 
 retract v1.3.1
+replace github.com/syntelos/go-auth => github.com/syntelos/go-auth v0.0.0-20240118131134-843c4e9dba9d
