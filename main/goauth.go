@@ -11,7 +11,7 @@ import (
 )
 
 /*
- * Fetch OAuth Token via credentials cache.
+ * Fetch OAuth Token.
  */
 func main() {
 

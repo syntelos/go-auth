@@ -18,7 +18,7 @@ import (
 )
 
 /*
- * Fetch OAuth Token via credentials cache.
+ * Fetch OAuth Token.
  */
 func Token(scopes ...string) (token *oauth2.Token) {
 
