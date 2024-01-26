@@ -1,7 +1,7 @@
 Another OAuth for GOPL
 
 
-  func Token(scopes ...string) (token *oauth2.Token) 
+  func Token(scopes []string) (token *oauth2.Token) 
 
     OAUTH TOKEN application service requires downloaded
     [CLIENT] in

@@ -20,7 +20,7 @@ import (
 /*
  * Fetch OAuth Token.
  */
-func Token(scopes ...string) (token *oauth2.Token) {
+func Token(scopes []string) (token *oauth2.Token) {
 
 	scopes = ReviewScopes(scopes)
 
@@ -35,14 +35,9 @@ func Token(scopes ...string) (token *oauth2.Token) {
 		if nil == er {
 			var redirect string = config.RedirectURL
 
-			var consentPageSettings util.ConsentPageSettings = util.ConsentPageSettings {
-				DisableAutoOpenConsentPage: false,
-				InteractionTimeout: (time.Duration(2) * time.Minute),
-			}
-
 			var authCodeServer util.AuthorizationCodeServer = &util.AuthorizationCodeLocalhost {
-				ConsentPageSettings: consentPageSettings,
-				AuthCodeReqStatus: util.AuthorizationCodeStatus{Status: util.WAITING, Details: "Authorization code not yet set."},				
+				InteractionTimeout: (time.Duration(2) * time.Minute),
+				AuthCodeReqStatus: util.AuthorizationCodeStatus{Status: util.WAITING, Details: "Authorization code not yet set."},
 			}
 
 			redirect, er = authCodeServer.ListenAndServe(redirect)
@@ -55,7 +50,7 @@ func Token(scopes ...string) (token *oauth2.Token) {
 				var params google.CredentialsParams = google.CredentialsParams {
 					Scopes: scopes,
 					State: "state",
-					AuthHandler: util.Get3LOAuthorizationHandler("state", consentPageSettings, &authCodeServer),
+					AuthHandler: util.Get3LOAuthorizationHandler("state", &authCodeServer),
 					PKCE: util.GeneratePKCEParams() }
 
 				var creds *google.Credentials

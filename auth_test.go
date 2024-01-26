@@ -12,7 +12,7 @@ import (
 
 func TestAuthToken(t *testing.T){
 
-	var token *oauth2.Token = Token()
+	var token *oauth2.Token = Token([]string{})
 
 	if nil != token && token.Valid() {
 

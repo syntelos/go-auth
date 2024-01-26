@@ -106,22 +106,11 @@ type AuthorizationCodeStatus struct {
 	Details string
 }
 
-// ConsentPageSettings is a 3-legged-OAuth helper that
-// contains the settings for the interaction with the consent page
-type ConsentPageSettings struct {
-	// DisableAutoOpenConsentPage controls the feature to automatically
-	// open the browser to vist the consent page
-	DisableAutoOpenConsentPage bool
-	// InteractionTimeout is the maximum time to wait for the user
-	// to interact with the consent page
-	InteractionTimeout time.Duration
-}
-
 // AuthorizationCodeLocalhost implements AuthorizationCodeServer.
 // See interface for description
 type AuthorizationCodeLocalhost struct {
+	InteractionTimeout  time.Duration
 	AuthCodeReqStatus   AuthorizationCodeStatus
-	ConsentPageSettings ConsentPageSettings
 	addr                string
 	authCode            AuthorizationCode
 	server              *http.Server
@@ -155,21 +144,21 @@ func (lh *AuthorizationCodeLocalhost) ListenAndServe(address string) (serverAddr
 func (lh *AuthorizationCodeLocalhost) Close() {
 	if lh.server == nil {
 		return
+	} else {
+		// Stoping server
+		lh.server.Close()
+		lh.server = nil
+		lh.addr = ""
 	}
-
-	// Stoping server
-	lh.server.Close()
-	lh.server = nil
-	lh.addr = ""
 }
 
 func (lh *AuthorizationCodeLocalhost) IsListeningAndServing() (isLisAndServ bool) {
 	if lh.server == nil {
 		return false
+	} else {
+		_, err := http.Get(lh.addr + "/status/get")
+		return err == nil
 	}
-
-	_, err := http.Get(lh.addr + "/status/get")
-	return err == nil
 }
 
 func (lh *AuthorizationCodeLocalhost) WaitForListeningAndServing(maxWaitTime time.Duration) (isLisAndServ bool, err error) {
@@ -197,10 +186,13 @@ func (lh *AuthorizationCodeLocalhost) WaitForListeningAndServing(maxWaitTime tim
 }
 
 func (lh *AuthorizationCodeLocalhost) GetAuthenticationCode() (authCode AuthorizationCode, err error) {
+
 	if lh.AuthCodeReqStatus.Status != GRANTED {
+
 		return lh.authCode, fmt.Errorf(lh.AuthCodeReqStatus.Details)
+	} else {
+		return lh.authCode, nil
 	}
-	return lh.authCode, nil
 }
 
 func (lh *AuthorizationCodeLocalhost) WaitForConsentPageToReturnControl() (err error) {
@@ -209,7 +201,7 @@ func (lh *AuthorizationCodeLocalhost) WaitForConsentPageToReturnControl() (err e
 	}
 
 	timeout := false
-	timer := time.AfterFunc(lh.ConsentPageSettings.InteractionTimeout, func() {
+	timer := time.AfterFunc(lh.InteractionTimeout, func() {
 		timeout = true
 	})
 
@@ -222,9 +214,11 @@ func (lh *AuthorizationCodeLocalhost) WaitForConsentPageToReturnControl() (err e
 	}
 
 	if lh.AuthCodeReqStatus.Status == WAITING {
+
 		return fmt.Errorf("Timed out.")
+	} else {
+		return nil
 	}
-	return nil
 }
 
 // redirectUriHandler handles the redirect logic when aquiring the authorization code.
