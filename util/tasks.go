@@ -76,7 +76,7 @@ type TaskSettings struct {
 // Fetches and prints the token in plain text with the given settings
 // using Google Authenticator.
 func Fetch(settings *Settings, taskSettings *TaskSettings) {
-	token := fetchToken(settings, taskSettings)
+	token := FetchToken(settings, taskSettings)
 	printToken(token, taskSettings.Format, settings)
 }
 
@@ -90,7 +90,7 @@ func Header(settings *Settings, taskSettings *TaskSettings) {
 // Fetches token with the given settings using Google Authenticator
 // and use the token as header to make curl request.
 func Curl(settings *Settings, taskSettings *TaskSettings) {
-	token := fetchToken(settings, taskSettings)
+	token := FetchToken(settings, taskSettings)
 	if token != nil {
 		header := BuildHeader(token.TokenType, token.AccessToken)
 		curlcli := taskSettings.CurlCli
@@ -160,7 +160,7 @@ func getTokenInfo(token string) (string, error) {
 //
 // If STS is requested, we will perform an STS exchange
 // after the original access token has been fetched.
-func fetchToken(settings *Settings, taskSettings *TaskSettings) *oauth2.Token {
+func FetchToken(settings *Settings, taskSettings *TaskSettings) *oauth2.Token {
 	token, err := LookupCache(settings)
 	tokenExpired := isTokenExpired(token)
 	if token == nil || tokenExpired {
@@ -184,7 +184,7 @@ func fetchToken(settings *Settings, taskSettings *TaskSettings) *oauth2.Token {
 					fetchSettings = &refreshSettings
 				}
 			}
-			token, err = FetchToken(context.Background(), fetchSettings)
+			token, err = SourceToken(context.Background(), fetchSettings)
 			if err != nil {
 				fmt.Println(err)
 				return nil

@@ -50,7 +50,7 @@ func newTokenSource(ctx context.Context, settings *Settings) (*oauth2.TokenSourc
 
 // Returns a token from the given settings.
 // Returns nil for API keys.
-func FetchToken(ctx context.Context, settings *Settings) (*oauth2.Token, error) {
+func SourceToken(ctx context.Context, settings *Settings) (*oauth2.Token, error) {
 	if settings.APIKey != "" {
 		return nil, nil
 	}
