@@ -23,11 +23,8 @@ import (
 	"runtime"
 )
 
-// Browser represents an internet browser.
-type Browser struct{}
-
 // Opens URL in a new broser tab.
-func (b *Browser) OpenURL(url string) error {
+func OpenURL(url string) error {
 	var err error
 	rt := runtime.GOOS
 	switch rt {

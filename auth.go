@@ -5,10 +5,14 @@
 package auth
 
 import (
+	"context"
 	"io/ioutil"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"github.com/syntelos/go-auth/util"
+	"os"
+	"os/user"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -20,14 +24,14 @@ func Token(scopes ...string) (token *oauth2.Token) {
 
 	scopes = ReviewScopes(scopes)
 
-	var json []byte
+	var client []byte
 	var er error
 
-	json, er = ioutil.ReadFile(util.ClientFile)
+	client, er = ioutil.ReadFile(ClientFile)
 	if nil == er {
 
 		var config *oauth2.Config
-		config, er = google.ConfigFromJSON(json,scopes[0])
+		config, er = google.ConfigFromJSON(client,scopes[0])
 		if nil == er {
 			var redirect string = config.RedirectURL
 
@@ -42,22 +46,31 @@ func Token(scopes ...string) (token *oauth2.Token) {
 			if nil == er {
 				defer authCodeServer.Close()
 
-				var settings util.Settings = util.Settings{
-					CredentialsJSON: string(json),
-					Scope:           scopes[0],
-					AuthHandler:     util.Get3LOAuthorizationHandler("state", consentPageSettings, &authCodeServer),
-					State:           "state",
-					Sts:             false,
-					AuthType:        util.AuthTypeOAuth,
-				}
-				var taskSettings util.TaskSettings = util.TaskSettings{
-					AuthType:  "oauth",
-					Format:    "bare",
-					ExtraArgs: scopes,
-					Refresh:   false,
-				}
+				var src oauth2.TokenSource
+				var tok *oauth2.Token
 
-				return util.FetchToken(&settings,&taskSettings)
+				var params google.CredentialsParams = google.CredentialsParams {
+					Scopes: scopes,
+					State: "state",
+					AuthHandler: util.Get3LOAuthorizationHandler("state", consentPageSettings, &authCodeServer),
+					PKCE: util.GeneratePKCEParams() }
+
+				var creds *google.Credentials
+
+				creds, er = google.CredentialsFromJSONWithParams(context.Background(), client, params)
+
+				if er == nil {
+
+					src = creds.TokenSource
+
+					ts := oauth2.ReuseTokenSource(nil, src)
+
+					tok, er = ts.Token()
+
+					if nil == er {
+						return tok
+					}
+				}
 			}
 		}
 	}
@@ -92,4 +105,20 @@ func ReviewScopes(input []string) (output []string) {
 		}
 	}
 	return output
+}
+
+const ClientDirectoryName = ".gdr"
+var ClientDirectory string = filepath.Join(GuessUnixHomeDir(), ClientDirectoryName)
+var ClientFile string = filepath.Join(ClientDirectory, "client.json")
+
+func GuessUnixHomeDir() string {
+	// Prefer $HOME over user.Current due to glibc bug: golang.org/issue/13470
+	if v := os.Getenv("HOME"); v != "" {
+		return v
+	}
+	// Else, fall back to user.Current:
+	if u, err := user.Current(); err == nil {
+		return u.HomeDir
+	}
+	return ""
 }

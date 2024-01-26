@@ -87,8 +87,8 @@ func authorization3LOLoopback(authCodeURL string, consentSettings ConsentPageSet
 			/*
 			 * Auto open consent
 			 */
-			b := Browser{}
-			if be := b.OpenURL(authCodeURL); be != nil {
+
+			if be := OpenURL(authCodeURL); be != nil {
 
 				fmt.Println("\nError:", be)
 			}
