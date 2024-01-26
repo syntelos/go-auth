@@ -9,25 +9,25 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"github.com/syntelos/go-auth/util"
+	"strings"
 	"time"
 )
-
-const ScopePrefix string = "https://www.googleapis.com/auth/"
-const DriveScope string = ScopePrefix + "drive"
-
 
 /*
  * Fetch OAuth Token via credentials cache.
  */
-func Token() (token *oauth2.Token) {
+func Token(scopes ...string) (token *oauth2.Token) {
+
+	scopes = ReviewScopes(scopes)
+
 	var json []byte
 	var er error
 
-	json, er = ioutil.ReadFile(util.CacheFile)
+	json, er = ioutil.ReadFile(util.ClientFile)
 	if nil == er {
 
 		var config *oauth2.Config
-		config, er = google.ConfigFromJSON(json,DriveScope)
+		config, er = google.ConfigFromJSON(json,scopes[0])
 		if nil == er {
 			var redirect string = config.RedirectURL
 
@@ -37,34 +37,59 @@ func Token() (token *oauth2.Token) {
 				ConsentPageSettings: consentPageSettings,
 				AuthCodeReqStatus: util.AuthorizationCodeStatus{Status: util.WAITING, Details: "Authorization code not yet set."},				
 			}
-			authCodeServer.ListenAndServe(redirect)
 
-			defer authCodeServer.Close()
+			redirect, er = authCodeServer.ListenAndServe(redirect)
+			if nil == er {
+				defer authCodeServer.Close()
 
-			var settings util.Settings = util.Settings{
-				CredentialsJSON: string(json),
-				Scope:           DriveScope,
-				AuthHandler:     util.Get3LOAuthorizationHandler("state", consentPageSettings, &authCodeServer),
-				State:           "state",
-				Audience:        "",
-				QuotaProject:    "",
-				Sts:             false,
-				ServiceAccount:  "",
-				Email:           "",
-				AuthType:        util.AuthTypeOAuth,
+				var settings util.Settings = util.Settings{
+					CredentialsJSON: string(json),
+					Scope:           scopes[0],
+					AuthHandler:     util.Get3LOAuthorizationHandler("state", consentPageSettings, &authCodeServer),
+					State:           "state",
+					Sts:             false,
+					AuthType:        util.AuthTypeOAuth,
+				}
+				var taskSettings util.TaskSettings = util.TaskSettings{
+					AuthType:  "oauth",
+					Format:    "bare",
+					ExtraArgs: scopes,
+					Refresh:   false,
+				}
+
+				return util.FetchToken(&settings,&taskSettings)
 			}
-			var taskSettings util.TaskSettings = util.TaskSettings{
-				AuthType:  "oauth",
-				Format:    "bare",
-				CurlCli:   "",
-				Url:       "",
-				ExtraArgs: []string{"drive"},
-				SsoCli:    "",
-				Refresh:   false,
-			}
-
-			return util.FetchToken(&settings,&taskSettings)
 		}
 	}
 	return nil
+}
+
+const ScopePrefix string = "https://www.googleapis.com/auth/"
+const ScopeInfixUser string = "userinfo."
+
+func ReviewScopes(input []string) (output []string) {
+	if 0 == len(input) {
+		var scope string = ScopePrefix+"drive"
+		output = append(output,scope)
+	} else {
+		for _, ins := range input {
+			switch ins {
+			case "openId":
+				output = append(output,ins)
+
+			case "user", "email":
+				var scope string = ScopePrefix+ScopeInfixUser+ins
+				output = append(output,scope)
+				
+			default:
+				if -1 < strings.IndexByte(ins,'/') {
+					output = append(output,ins)
+				} else {
+					var scope string = ScopePrefix+ins
+					output = append(output,scope)
+				}
+			}
+		}
+	}
+	return output
 }

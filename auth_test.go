@@ -16,9 +16,9 @@ func TestAuthToken(t *testing.T){
 
 	if nil != token && token.Valid() {
 
-		fmt.Println("[TestAuthToken] Success")
+		fmt.Printf("[TestAuthToken] Success (%s)\n",token.AccessToken)
 
 	} else {
-		t.Fatal("[TestAuthToken] Failure")
+		t.Fatal("[TestAuthToken] Failure.")
 	}
 }
