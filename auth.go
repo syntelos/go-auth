@@ -6,10 +6,10 @@ package auth
 
 import (
 	"context"
-	"io/ioutil"
+	"github.com/syntelos/go-auth/util"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"github.com/syntelos/go-auth/util"
+	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -31,13 +31,13 @@ func Token(scopes []string) (token *oauth2.Token) {
 	if nil == er {
 
 		var config *oauth2.Config
-		config, er = google.ConfigFromJSON(client,scopes[0])
+		config, er = google.ConfigFromJSON(client, scopes[0])
 		if nil == er {
 			var redirect string = config.RedirectURL
 
-			var authCodeServer util.AuthorizationCodeServer = &util.AuthorizationCodeLocalhost {
+			var authCodeServer util.AuthorizationCodeServer = &util.AuthorizationCodeLocalhost{
 				InteractionTimeout: (time.Duration(2) * time.Minute),
-				AuthCodeReqStatus: util.AuthorizationCodeStatus{Status: util.WAITING, Details: "Authorization code not yet set."},
+				AuthCodeReqStatus:  util.AuthorizationCodeStatus{Status: util.WAITING, Details: "Authorization code not yet set."},
 			}
 
 			redirect, er = authCodeServer.ListenAndServe(redirect)
@@ -47,11 +47,11 @@ func Token(scopes []string) (token *oauth2.Token) {
 				var src oauth2.TokenSource
 				var tok *oauth2.Token
 
-				var params google.CredentialsParams = google.CredentialsParams {
-					Scopes: scopes,
-					State: "state",
+				var params google.CredentialsParams = google.CredentialsParams{
+					Scopes:      scopes,
+					State:       "state",
 					AuthHandler: util.Get3LOAuthorizationHandler("state", &authCodeServer),
-					PKCE: util.GeneratePKCEParams() }
+					PKCE:        util.GeneratePKCEParams()}
 
 				var creds *google.Credentials
 
@@ -80,24 +80,24 @@ const ScopeInfixUser string = "userinfo."
 
 func ReviewScopes(input []string) (output []string) {
 	if 0 == len(input) {
-		var scope string = ScopePrefix+"drive"
-		output = append(output,scope)
+		var scope string = ScopePrefix + "drive"
+		output = append(output, scope)
 	} else {
 		for _, ins := range input {
 			switch ins {
 			case "openId":
-				output = append(output,ins)
+				output = append(output, ins)
 
 			case "user", "email":
-				var scope string = ScopePrefix+ScopeInfixUser+ins
-				output = append(output,scope)
-				
+				var scope string = ScopePrefix + ScopeInfixUser + ins
+				output = append(output, scope)
+
 			default:
-				if -1 < strings.IndexByte(ins,'/') {
-					output = append(output,ins)
+				if -1 < strings.IndexByte(ins, '/') {
+					output = append(output, ins)
 				} else {
-					var scope string = ScopePrefix+ins
-					output = append(output,scope)
+					var scope string = ScopePrefix + ins
+					output = append(output, scope)
 				}
 			}
 		}
@@ -106,6 +106,7 @@ func ReviewScopes(input []string) (output []string) {
 }
 
 const ClientDirectoryName = ".goauth"
+
 var ClientDirectory string = filepath.Join(GuessUnixHomeDir(), ClientDirectoryName)
 var ClientFile string = filepath.Join(ClientDirectory, "client.json")
 

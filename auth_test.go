@@ -10,13 +10,13 @@ import (
 	"testing"
 )
 
-func TestAuthToken(t *testing.T){
+func TestAuthToken(t *testing.T) {
 
 	var token *oauth2.Token = Token([]string{})
 
 	if nil != token && token.Valid() {
 
-		fmt.Printf("[TestAuthToken] Success (%s)\n",token.AccessToken)
+		fmt.Printf("[TestAuthToken] Success (%s)\n", token.AccessToken)
 
 	} else {
 		t.Fatal("[TestAuthToken] Failure.")
