@@ -30,44 +30,45 @@ func Token(scopes []string) (token *oauth2.Token) {
 	client, er = ioutil.ReadFile(ClientFile)
 	if nil == er {
 
-		var config *oauth2.Config
-		config, er = google.ConfigFromJSON(client, scopes[0])
+		var config *oauth2.Config = ConfigFromClient(client, scopes)
+
+		var redirect string = config.RedirectURL
+
+		var authCodeServer util.AuthorizationCodeServer = &util.AuthorizationCodeLocalhost{
+			InteractionTimeout: (time.Duration(2) * time.Minute),
+			AuthCodeReqStatus:  util.AuthorizationCodeStatus{Status: util.WAITING, Details: "Authorization code not yet set."},
+		}
+
+		redirect, er = authCodeServer.ListenAndServe(redirect)
 		if nil == er {
-			var redirect string = config.RedirectURL
+			defer authCodeServer.Close()
 
-			var authCodeServer util.AuthorizationCodeServer = &util.AuthorizationCodeLocalhost{
-				InteractionTimeout: (time.Duration(2) * time.Minute),
-				AuthCodeReqStatus:  util.AuthorizationCodeStatus{Status: util.WAITING, Details: "Authorization code not yet set."},
-			}
+			config.RedirectURL = redirect
+			client = ConfigToClient(config)
 
-			redirect, er = authCodeServer.ListenAndServe(redirect)
-			if nil == er {
-				defer authCodeServer.Close()
+			var src oauth2.TokenSource
+			var tok *oauth2.Token
 
-				var src oauth2.TokenSource
-				var tok *oauth2.Token
+			var params google.CredentialsParams = google.CredentialsParams{
+				Scopes:      scopes,
+				State:       "state",
+				AuthHandler: util.Get3LOAuthorizationHandler("state", &authCodeServer),
+				PKCE:        util.GeneratePKCEParams()}
 
-				var params google.CredentialsParams = google.CredentialsParams{
-					Scopes:      scopes,
-					State:       "state",
-					AuthHandler: util.Get3LOAuthorizationHandler("state", &authCodeServer),
-					PKCE:        util.GeneratePKCEParams()}
+			var creds *google.Credentials
 
-				var creds *google.Credentials
+			creds, er = google.CredentialsFromJSONWithParams(context.Background(), client, params)
 
-				creds, er = google.CredentialsFromJSONWithParams(context.Background(), client, params)
+			if er == nil {
 
-				if er == nil {
+				src = creds.TokenSource
 
-					src = creds.TokenSource
+				ts := oauth2.ReuseTokenSource(nil, src)
 
-					ts := oauth2.ReuseTokenSource(nil, src)
+				tok, er = ts.Token()
 
-					tok, er = ts.Token()
-
-					if nil == er {
-						return tok
-					}
+				if nil == er {
+					return tok
 				}
 			}
 		}
