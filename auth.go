@@ -110,7 +110,7 @@ func ReviewScopes(input []string) (output []string) {
 	return output
 }
 
-const ClientDirectoryName = ".gdr"
+const ClientDirectoryName = ".goauth"
 var ClientDirectory string = filepath.Join(GuessUnixHomeDir(), ClientDirectoryName)
 var ClientFile string = filepath.Join(ClientDirectory, "client.json")
 
