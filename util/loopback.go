@@ -131,24 +131,25 @@ func (lh *AuthorizationCodeLocalhost) ListenAndServe(address string) (serverAddr
 	listener, serverAddress, err := GetListener(address)
 	if err != nil {
 		return "", fmt.Errorf("Unable to Listen: %v", err)
+	} else {
+
+		lh.addr = serverAddress
+
+		// Setup local host in given address
+		mux := http.NewServeMux()
+		lh.server = &http.Server{Addr: strings.Replace(lh.addr, "http://", "", 1), Handler: mux}
+		mux.HandleFunc(SERVER_LOOPBACK_ENDPOINT_URL, lh.redirectUriHandler)
+		mux.HandleFunc(SERVER_STATUS_ENDPOINT_URL, lh.statusGetHandler)
+
+		go func() {
+			// Start Listed and Serve
+			if err := lh.server.Serve(*listener); err != nil && err != http.ErrServerClosed {
+				fmt.Printf("Could not listen on address: %v. Error: %v\n", lh.addr, err)
+			}
+		}()
+
+		return serverAddress, nil
 	}
-
-	lh.addr = serverAddress
-
-	// Setup local host in given address
-	mux := http.NewServeMux()
-	lh.server = &http.Server{Addr: strings.Replace(lh.addr, "http://", "", 1), Handler: mux}
-	mux.HandleFunc(SERVER_LOOPBACK_ENDPOINT_URL, lh.redirectUriHandler)
-	mux.HandleFunc(SERVER_STATUS_ENDPOINT_URL, lh.statusGetHandler)
-
-	go func() {
-		// Start Listed and Serve
-		if err := lh.server.Serve(*listener); err != nil && err != http.ErrServerClosed {
-			fmt.Printf("Could not listen on address: %v. Error: %v\n", lh.addr, err)
-		}
-	}()
-
-	return serverAddress, nil
 }
 
 func (lh *AuthorizationCodeLocalhost) Close() {

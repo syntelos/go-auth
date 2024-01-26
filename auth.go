@@ -35,7 +35,10 @@ func Token(scopes ...string) (token *oauth2.Token) {
 		if nil == er {
 			var redirect string = config.RedirectURL
 
-			var consentPageSettings util.ConsentPageSettings = util.ConsentPageSettings{DisableAutoOpenConsentPage: false, InteractionTimeout: (time.Duration(2) * time.Minute)}
+			var consentPageSettings util.ConsentPageSettings = util.ConsentPageSettings {
+				DisableAutoOpenConsentPage: false,
+				InteractionTimeout: (time.Duration(2) * time.Minute),
+			}
 
 			var authCodeServer util.AuthorizationCodeServer = &util.AuthorizationCodeLocalhost {
 				ConsentPageSettings: consentPageSettings,
